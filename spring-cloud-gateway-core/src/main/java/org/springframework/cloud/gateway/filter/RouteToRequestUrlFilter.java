@@ -35,6 +35,7 @@ import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.c
 import reactor.core.publisher.Mono;
 
 /**
+ * 根据Route，组成请求路径URL
  * @author Spencer Gibb
  */
 public class RouteToRequestUrlFilter implements GlobalFilter, Ordered {
@@ -42,6 +43,7 @@ public class RouteToRequestUrlFilter implements GlobalFilter, Ordered {
 	private static final Log log = LogFactory.getLog(RouteToRequestUrlFilter.class);
 
 	public static final int ROUTE_TO_URL_FILTER_ORDER = 10000;
+
 	private static final String SCHEME_REGEX = "[a-zA-Z]([a-zA-Z]|\\d|\\+|\\.|-)*:.*";
 	static final Pattern schemePattern = Pattern.compile(SCHEME_REGEX);
 
@@ -52,27 +54,35 @@ public class RouteToRequestUrlFilter implements GlobalFilter, Ordered {
 
 	@Override
 	public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+
+		// 获得Route
 		Route route = exchange.getAttribute(GATEWAY_ROUTE_ATTR);
 		if (route == null) {
 			return chain.filter(exchange);
 		}
 		log.trace("RouteToRequestUrlFilter start");
+
+
 		URI uri = exchange.getRequest().getURI();
+		// 判断是否已经被url 编码了
 		boolean encoded = containsEncodedParts(uri);
 		URI routeUri = route.getUri();
 
-		if (hasAnotherScheme(routeUri)) {
+		if (hasAnotherScheme(routeUri)) { // TODO 这个可能是个特性，对一些特殊scheme 进行替换处理
 			// this is a special url, save scheme to special attribute
 			// replace routeUri with schemeSpecificPart
 			exchange.getAttributes().put(GATEWAY_SCHEME_PREFIX_ATTR, routeUri.getScheme());
 			routeUri = URI.create(routeUri.getSchemeSpecificPart());
 		}
 
+		// 拼接requestUrl
 		URI requestUrl = UriComponentsBuilder.fromUri(uri)
 				.uri(routeUri)
 				.build(encoded)
 				.toUri();
+		// 设置 requestUrl 到 GATEWAY_REQUEST_URL_ATTR {@link RewritePathGatewayFilterFactory}
 		exchange.getAttributes().put(GATEWAY_REQUEST_URL_ATTR, requestUrl);
+		// 提交过滤器链继续处理
 		return chain.filter(exchange);
 	}
 

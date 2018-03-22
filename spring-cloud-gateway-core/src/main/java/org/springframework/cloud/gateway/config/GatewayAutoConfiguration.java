@@ -131,16 +131,12 @@ import rx.RxReactiveStreams;
 @ConditionalOnClass(DispatcherHandler.class)
 public class GatewayAutoConfiguration {
 
+	// 建立 netty-httpclient 请求客户端
 	@Configuration
 	@ConditionalOnClass(HttpClient.class)
 	protected static class NettyConfiguration {
-		@Bean
-		@ConditionalOnMissingBean
-		public HttpClient httpClient(@Qualifier("nettyClientOptions") Consumer<? super HttpClientOptions.Builder> options) {
-			return HttpClient.create(options);
-		}
 
-		@Bean
+		@Bean // 1.1
 		public Consumer<? super HttpClientOptions.Builder> nettyClientOptions(HttpClientProperties properties) {
 			return opts -> {
 
@@ -195,27 +191,62 @@ public class GatewayAutoConfiguration {
 			};
 		}
 
-		@Bean
+		@Bean // 1.2 构建netty 的httpclient客户端
+		@ConditionalOnMissingBean
+		public HttpClient httpClient(@Qualifier("nettyClientOptions") Consumer<? super HttpClientOptions.Builder> options) {
+			return HttpClient.create(options);
+		}
+
+		@Bean // 1.3
 		public HttpClientProperties httpClientProperties() {
 			return new HttpClientProperties();
 		}
 
-		@Bean
+		@Bean // 1.4
 		public NettyRoutingFilter routingFilter(HttpClient httpClient,
 												ObjectProvider<List<HttpHeadersFilter>> headersFilters) {
+			// 根据http https 前缀(scheme) 过滤处理，
 			return new NettyRoutingFilter(httpClient, headersFilters);
 		}
 
-		@Bean
+		@Bean // 1.5
 		public NettyWriteResponseFilter nettyWriteResponseFilter(GatewayProperties properties) {
+			 // 从 exchange.attribute.get('client_response_attr')获得响应，给客户端
 			return new NettyWriteResponseFilter(properties.getStreamingMediaTypes());
 		}
 
-		@Bean
+		@Bean // 1.6 用于上下文websocketRoutingFilter 的bean 创建 // TODO 不知道说的什么意思，
 		public ReactorNettyWebSocketClient reactorNettyWebSocketClient(@Qualifier("nettyClientOptions") Consumer<? super HttpClientOptions.Builder> options) {
 			return new ReactorNettyWebSocketClient(options);
 		}
 	}
+
+	// -------------------- 初始化GlobalFilter ---------------------
+	// GlobalFilter beans
+	@Bean // 2.1
+	public RouteToRequestUrlFilter routeToRequestUrlFilter() {
+		return new RouteToRequestUrlFilter();
+	}
+
+	@Bean // 2.2
+	@ConditionalOnBean(DispatcherHandler.class)
+	public ForwardRoutingFilter forwardRoutingFilter(DispatcherHandler dispatcherHandler) {
+		return new ForwardRoutingFilter(dispatcherHandler);
+	}
+
+	@Bean // 2.3
+	public WebSocketService webSocketService() {
+		return new HandshakeWebSocketService();
+	}
+
+	@Bean // 2.4
+	public WebsocketRoutingFilter websocketRoutingFilter(WebSocketClient webSocketClient,
+														 WebSocketService webSocketService,
+														 ObjectProvider<List<HttpHeadersFilter>> headersFilters) {
+		return new WebsocketRoutingFilter(webSocketClient, webSocketService, headersFilters);
+	}
+
+	// ---------------------------- 初始化GlobalFilter 结束 ------------------------
 
 	@Bean
 	public RouteLocatorBuilder routeLocatorBuilder(ConfigurableApplicationContext context) {
@@ -303,29 +334,6 @@ public class GatewayAutoConfiguration {
 	}
 
 
-	// GlobalFilter beans
-	@Bean
-	public RouteToRequestUrlFilter routeToRequestUrlFilter() {
-		return new RouteToRequestUrlFilter();
-	}
-
-	@Bean
-	@ConditionalOnBean(DispatcherHandler.class)
-	public ForwardRoutingFilter forwardRoutingFilter(DispatcherHandler dispatcherHandler) {
-		return new ForwardRoutingFilter(dispatcherHandler);
-	}
-
-	@Bean
-	public WebSocketService webSocketService() {
-		return new HandshakeWebSocketService();
-	}
-
-	@Bean
-	public WebsocketRoutingFilter websocketRoutingFilter(WebSocketClient webSocketClient,
-														 WebSocketService webSocketService,
-														 ObjectProvider<List<HttpHeadersFilter>> headersFilters) {
-		return new WebsocketRoutingFilter(webSocketClient, webSocketService, headersFilters);
-	}
 
 	@Bean
 	public WeightCalculatorWebFilter weightCalculatorWebFilter(Validator validator) {

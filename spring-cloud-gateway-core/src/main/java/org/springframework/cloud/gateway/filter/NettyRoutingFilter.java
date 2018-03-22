@@ -46,6 +46,7 @@ import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.i
 import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.setAlreadyRouted;
 
 /**
+ * 根据http https 前缀(scheme) 过滤处理， 根据ntty实现HttpClient请求后端服务
  * @author Spencer Gibb
  * @author Biju Kunjummen
  */
@@ -67,28 +68,35 @@ public class NettyRoutingFilter implements GlobalFilter, Ordered {
 
 	@Override
 	public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+		// 获得requestUrl
 		URI requestUrl = exchange.getRequiredAttribute(GATEWAY_REQUEST_URL_ATTR);
 
+		// 判断是否能处理: 以 http 或https 开头， 没有其他route 处理过
 		String scheme = requestUrl.getScheme();
 		if (isAlreadyRouted(exchange) || (!"http".equals(scheme) && !"https".equals(scheme))) {
 			return chain.filter(exchange);
 		}
+
+		// 设置已经路由
 		setAlreadyRouted(exchange);
+
 
 		ServerHttpRequest request = exchange.getRequest();
 
 		final HttpMethod method = HttpMethod.valueOf(request.getMethod().toString());
 		final String url = requestUrl.toString();
 
+		// 根据headersFilters 组成httpHeader， 写入httpHeaders
 		HttpHeaders filtered = filterRequest(this.headersFilters.getIfAvailable(),
 				exchange);
-
 		final DefaultHttpHeaders httpHeaders = new DefaultHttpHeaders();
 		filtered.forEach(httpHeaders::set);
 
+		// 根据 Transfer-Encoding 字段决定传输编码方式
 		String transferEncoding = request.getHeaders().getFirst(HttpHeaders.TRANSFER_ENCODING);
 		boolean chunkedTransfer = "chunked".equalsIgnoreCase(transferEncoding);
 
+		// 是否保留host 信息， 应该是有http 请求绑定域名
 		boolean preserveHost = exchange.getAttributeOrDefault(PRESERVE_HOST_HEADER_ATTRIBUTE, false);
 
 		return this.httpClient.request(method, url, req -> {
@@ -96,7 +104,7 @@ public class NettyRoutingFilter implements GlobalFilter, Ordered {
 					.headers(httpHeaders)
 					.chunkedTransfer(chunkedTransfer)
 					.failOnServerError(false)
-					.failOnClientError(false);
+					.failOnClientError(false); // 是否请求失败抛出异常
 
 			if (preserveHost) {
 				String host = request.getHeaders().getFirst(HttpHeaders.HOST);
@@ -119,6 +127,7 @@ public class NettyRoutingFilter implements GlobalFilter, Ordered {
 			response.getHeaders().putAll(filteredResponseHeaders);
 			response.setStatusCode(HttpStatus.valueOf(res.status().code()));
 
+			// 设置 Response 到 CLIENT_RESPONSE_ATTR
 			// Defer committing the response until all route filters have run
 			// Put client response as ServerWebExchange attribute and write response later NettyWriteResponseFilter
 			exchange.getAttributes().put(CLIENT_RESPONSE_ATTR, res);

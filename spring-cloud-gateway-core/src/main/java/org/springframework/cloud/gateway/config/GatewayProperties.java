@@ -32,6 +32,7 @@ import org.springframework.validation.annotation.Validated;
 
 /**
  * @author Spencer Gibb
+ * 配置存储类
  */
 @ConfigurationProperties("spring.cloud.gateway")
 @Validated

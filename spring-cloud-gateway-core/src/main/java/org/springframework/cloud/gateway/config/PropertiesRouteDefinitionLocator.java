@@ -23,6 +23,7 @@ import org.springframework.cloud.gateway.route.RouteDefinitionLocator;
 import reactor.core.publisher.Flux;
 
 /**
+ * 从配置文件中载入route信息
  * @author Spencer Gibb
  */
 public class PropertiesRouteDefinitionLocator implements RouteDefinitionLocator {
@@ -35,6 +36,7 @@ public class PropertiesRouteDefinitionLocator implements RouteDefinitionLocator 
 
 	@Override
 	public Flux<RouteDefinition> getRouteDefinitions() {
+		// 从 GatewayProperties 获得路由配置数组
 		return Flux.fromIterable(this.properties.getRoutes());
 	}
 }

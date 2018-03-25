@@ -27,6 +27,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.core.annotation.AnnotationAwareOrderComparator;
 
 /**
+ * 路由缓存
  * @author Spencer Gibb
  */
 public class CachingRouteLocator implements RouteLocator {
@@ -59,6 +60,7 @@ public class CachingRouteLocator implements RouteLocator {
 		return routes;
 	}
 
+	// 监听RefeshRouteEvent, 刷新缓存
 	@EventListener(RefreshRoutesEvent.class)
     /* for testing */ void handleRefresh() {
         refresh();

@@ -71,7 +71,7 @@ public class WebsocketRoutingFilter implements GlobalFilter, Ordered {
 					.map(String::trim)
 					.collect(Collectors.toList());
 		}
-
+        // 处理客户端发起的连接请求， @link ReactorNettyRequestUpgradeStrategy
 		return this.webSocketService.handleRequest(exchange,
 				new ProxyWebSocketHandler(requestUrl, this.webSocketClient,
 						filtered, protocols));
@@ -120,13 +120,16 @@ public class WebsocketRoutingFilter implements GlobalFilter, Ordered {
 		@Override
 		public Mono<Void> handle(WebSocketSession session) {
 			// pass headers along so custom headers can be sent through
+			// 通过execute 连接后端代理成功后，回调WebSocketHandler#handle 方法
 			return client.execute(url, this.headers, new WebSocketHandler() {
 				@Override
 				public Mono<Void> handle(WebSocketSession proxySession) {
 					// Use retain() for Reactor Netty
+					// 转发消息 客户端 -> 后端服务
 					Mono<Void> proxySessionSend = proxySession
 							.send(session.receive().doOnNext(WebSocketMessage::retain));
 							// .log("proxySessionSend", Level.FINE);
+					// 转发消息 后端服务 -> 客户端
 					Mono<Void> serverSessionSend = session
 							.send(proxySession.receive().doOnNext(WebSocketMessage::retain));
 							// .log("sessionSend", Level.FINE);

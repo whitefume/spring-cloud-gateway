@@ -75,9 +75,13 @@ public class RouteDefinitionRouteLocator implements RouteLocator, BeanFactoryAwa
 									   List<RoutePredicateFactory> predicates,
 									   List<GatewayFilterFactory> gatewayFilterFactories,
 									   GatewayProperties gatewayProperties) {
+		// 设置RouteDefinitionLocator
 		this.routeDefinitionLocator = routeDefinitionLocator;
+		// 初始化RoutePredicateFactory, key 为RoutePredicateFactory:name()
 		initFactories(predicates);
+		// 初始化RoutePredicateFactory
 		gatewayFilterFactories.forEach(factory -> this.gatewayFilterFactories.put(factory.name(), factory));
+		// 设置 GatewayProperties
 		this.gatewayProperties = gatewayProperties;
 	}
 
@@ -112,6 +116,7 @@ public class RouteDefinitionRouteLocator implements RouteLocator, BeanFactoryAwa
 	@Override
 	public Flux<Route> getRoutes() {
 		return this.routeDefinitionLocator.getRouteDefinitions()
+				// RouteDefinition 转 Route
 				.map(this::convertToRoute)
 				//TODO: error handling
 				.map(route -> {
@@ -129,9 +134,11 @@ public class RouteDefinitionRouteLocator implements RouteLocator, BeanFactoryAwa
 	}
 
 	private Route convertToRoute(RouteDefinition routeDefinition) {
+		// 合并 Predicate， 将RouteDefinition.predicates数组合并一个java.util.funcion.Predicate
 		Predicate<ServerWebExchange> predicate = combinePredicates(routeDefinition);
+		// 获得 GatewayFilter
 		List<GatewayFilter> gatewayFilters = getFilters(routeDefinition);
-
+		// 构建Route
 		return Route.builder(routeDefinition)
 				.predicate(predicate)
 				.replaceFilters(gatewayFilters)
@@ -184,6 +191,7 @@ public class RouteDefinitionRouteLocator implements RouteLocator, BeanFactoryAwa
 	/* for testing */ static Tuple getTuple(ShortcutConfigurable shortcutConf, Map<String, String> args, SpelExpressionParser parser, BeanFactory beanFactory) {
 		TupleBuilder builder = TupleBuilder.tuple();
 
+		// 参数为空
 		List<String> argNames = shortcutConf.shortcutFieldOrder();
 		if (!argNames.isEmpty()) {
 			// ensure size is the same for key replacement later
@@ -193,17 +201,21 @@ public class RouteDefinitionRouteLocator implements RouteLocator, BeanFactoryAwa
 			}
 		}
 
+		// 创建Tuple
 		int entryIdx = 0;
 		for (Map.Entry<String, String> entry : args.entrySet()) {
+			// 获取参数key
 			String key = normalizeKey(entry.getKey(), entryIdx, shortcutConf, args);
+			// 获取参数value
 			Object value = getValue(parser, beanFactory, entry.getValue());
-
+            // 添加key、value
 			builder.put(key, value);
 			entryIdx++;
 		}
 
 		Tuple tuple = builder.build();
 
+		// 校验参数
 		if (shortcutConf.validateFieldsExist()) {
 			for (String name : argNames) {
 				if (!tuple.hasFieldName(name)) {
@@ -217,38 +229,46 @@ public class RouteDefinitionRouteLocator implements RouteLocator, BeanFactoryAwa
 	private List<GatewayFilter> getFilters(RouteDefinition routeDefinition) {
 		List<GatewayFilter> filters = new ArrayList<>();
 
+		// 添加 默认过滤器
 		//TODO: support option to apply defaults after route specific filters?
 		if (!this.gatewayProperties.getDefaultFilters().isEmpty()) {
 			filters.addAll(loadGatewayFilters("defaultFilters",
 					this.gatewayProperties.getDefaultFilters()));
 		}
 
+		// 添加 配置过滤器
 		if (!routeDefinition.getFilters().isEmpty()) {
 			filters.addAll(loadGatewayFilters(routeDefinition.getId(), routeDefinition.getFilters()));
 		}
 
+		// 排序
 		AnnotationAwareOrderComparator.sort(filters);
 		return filters;
 	}
 
 	private Predicate<ServerWebExchange> combinePredicates(RouteDefinition routeDefinition) {
+		// 寻找 Predicate
 		List<PredicateDefinition> predicates = routeDefinition.getPredicates();
+		// 拼装 Predicate
 		Predicate<ServerWebExchange> predicate = lookup(routeDefinition, predicates.get(0));
 
 		for (PredicateDefinition andPredicate : predicates.subList(1, predicates.size())) {
 			Predicate<ServerWebExchange> found = lookup(routeDefinition, andPredicate);
 			predicate = predicate.and(found);
 		}
-
+		// 返回 Predicate
 		return predicate;
 	}
 
 	@SuppressWarnings("unchecked")
 	private Predicate<ServerWebExchange> lookup(RouteDefinition route, PredicateDefinition predicate) {
+		// 获取 RoutePredicateFactory
 		RoutePredicateFactory<Object> factory = this.predicates.get(predicate.getName());
 		if (factory == null) {
             throw new IllegalArgumentException("Unable to find RoutePredicateFactory with name " + predicate.getName());
 		}
+
+		// 获取
 		Map<String, String> args = predicate.getArgs();
 		if (logger.isDebugEnabled()) {
 			logger.debug("RouteDefinition " + route.getId() + " applying "

@@ -28,6 +28,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
+ * 实现基于内存存储的RouteDefinition仓库
  * @author Spencer Gibb
  */
 public class InMemoryRouteDefinitionRepository implements RouteDefinitionRepository {

@@ -92,6 +92,7 @@ public class ServerWebExchangeUtils {
 	public static void addOriginalRequestUrl(ServerWebExchange exchange, URI url) {
 		exchange.getAttributes().computeIfAbsent(GATEWAY_ORIGINAL_REQUEST_URL_ATTR, s -> new LinkedHashSet<>());
 		LinkedHashSet<URI> uris = exchange.getRequiredAttribute(GATEWAY_ORIGINAL_REQUEST_URL_ATTR);
+		// 为什么使用LinkedHashSet ，因为RewritePathGatewayFilterFactor/ PrefixPathGatewayFilterFactory 多次重写
 		uris.add(url);
 	}
 }

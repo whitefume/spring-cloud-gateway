@@ -62,10 +62,12 @@ public class LoadBalancerClientFilter implements GlobalFilter, Ordered {
 			return chain.filter(exchange);
 		}
 		//preserve the original url
+		// 添加 原始请求Uri 到 gateway_original_request_url_attr
 		addOriginalRequestUrl(exchange, url);
 
 		log.trace("LoadBalancerClientFilter url before: " + url);
 
+		// 获取服务实例
 		final ServiceInstance instance = loadBalancer.choose(url.getHost());
 
 		if (instance == null) {

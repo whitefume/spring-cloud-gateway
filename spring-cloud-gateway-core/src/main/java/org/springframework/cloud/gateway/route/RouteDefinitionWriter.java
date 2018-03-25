@@ -21,6 +21,7 @@ import org.springframework.cloud.gateway.route.RouteDefinition;
 import reactor.core.publisher.Mono;
 
 /**
+ * 路由配置接口，定义保存和删除方法
  * @author Spencer Gibb
  */
 public interface RouteDefinitionWriter {

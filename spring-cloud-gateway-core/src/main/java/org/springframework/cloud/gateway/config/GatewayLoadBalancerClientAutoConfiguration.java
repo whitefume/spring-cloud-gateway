@@ -36,7 +36,7 @@ import org.springframework.web.reactive.DispatcherHandler;
 public class GatewayLoadBalancerClientAutoConfiguration {
 
 	// GlobalFilter beans
-
+	// 根据lb:// 前缀过滤处理，使用serviceId 选择一个服务实例，从而实现负载均衡
 	@Bean
 	@ConditionalOnBean(LoadBalancerClient.class)
 	public LoadBalancerClientFilter loadBalancerClientFilter(LoadBalancerClient client) {

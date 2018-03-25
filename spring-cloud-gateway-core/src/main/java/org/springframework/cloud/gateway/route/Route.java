@@ -36,15 +36,15 @@ import org.springframework.web.util.UriComponentsBuilder;
  * @author Spencer Gibb
  */
 public class Route implements Ordered {
-
+	// 路由编号
 	private final String id;
-
+	// 路由指向的uri
 	private final URI uri;
-
+	// 顺序，当请求匹配多个路由时，使用顺序小的
 	private final int order;
-
+    // 谓语数组， 请求通过此判断是否匹配
 	private final Predicate<ServerWebExchange> predicate;
-
+    // 过滤器数组
 	private final List<GatewayFilter> gatewayFilters;
 
 	public static Builder builder() {

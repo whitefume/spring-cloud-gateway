@@ -223,28 +223,42 @@ public class GatewayAutoConfiguration {
 
 	// -------------------- 初始化GlobalFilter ---------------------
 	// GlobalFilter beans
-	@Bean // 2.1
+	@Bean // 2.1 组装完整URL
 	public RouteToRequestUrlFilter routeToRequestUrlFilter() {
 		return new RouteToRequestUrlFilter();
 	}
 
-	@Bean // 2.2
+	@Bean // 2.2 对前缀forward 的完整URL 进行转发
 	@ConditionalOnBean(DispatcherHandler.class)
 	public ForwardRoutingFilter forwardRoutingFilter(DispatcherHandler dispatcherHandler) {
 		return new ForwardRoutingFilter(dispatcherHandler);
 	}
 
-	@Bean // 2.3
+	@Bean // 2.3 TODO 不知道这个干什么
 	public WebSocketService webSocketService() {
 		return new HandshakeWebSocketService();
 	}
 
-	@Bean // 2.4
+	@Bean // 2.4 websocket路由网关，根据ws:// wss:// 前缀处理，代理后端websocket服务， 可以使用上面ReactorNettyWebSocketClient
 	public WebsocketRoutingFilter websocketRoutingFilter(WebSocketClient webSocketClient,
 														 WebSocketService webSocketService,
 														 ObjectProvider<List<HttpHeadersFilter>> headersFilters) {
 		return new WebsocketRoutingFilter(webSocketClient, webSocketService, headersFilters);
 	}
+
+	@Bean // 2.5  所有GlobalFilter 组合进这个Bean
+	public FilteringWebHandler filteringWebHandler(List<GlobalFilter> globalFilters) {
+		return new FilteringWebHandler(globalFilters);
+	}
+
+
+	// ConfigurationProperty beans
+	// 加载配置文件配置的RouteDefinition / FilterDefinition
+	@Bean // 2.6
+	public GatewayProperties gatewayProperties() {
+		return new GatewayProperties();
+	}
+
 
 	// ---------------------------- 初始化GlobalFilter 结束 ------------------------
 
@@ -253,24 +267,25 @@ public class GatewayAutoConfiguration {
 		return new RouteLocatorBuilder(context);
 	}
 
-	@Bean
+	@Bean // 4.1 从配置文件中载入route信息
 	@ConditionalOnMissingBean
 	public PropertiesRouteDefinitionLocator propertiesRouteDefinitionLocator(GatewayProperties properties) {
 		return new PropertiesRouteDefinitionLocator(properties);
 	}
 
-	@Bean
+	@Bean // 4.2 配置基于内存欧美式RouteDefinition ，如果存在其他的被替换
 	@ConditionalOnMissingBean(RouteDefinitionRepository.class)
 	public InMemoryRouteDefinitionRepository inMemoryRouteDefinitionRepository() {
 		return new InMemoryRouteDefinitionRepository();
 	}
 
-	@Bean
-	@Primary
+	@Bean // 4.3 优先注入
+	@Primary // 将 PropertiesRouteDefinitionLocator  InMemoryRouteDefinitionRepository 注入中
 	public RouteDefinitionLocator routeDefinitionLocator(List<RouteDefinitionLocator> routeDefinitionLocators) {
 		return new CompositeRouteDefinitionLocator(Flux.fromIterable(routeDefinitionLocators));
 	}
 
+	// 4.4 RouteDefinition  转 route
 	@Bean
 	public RouteLocator routeDefinitionRouteLocator(GatewayProperties properties,
 												   List<GatewayFilterFactory> GatewayFilters,
@@ -281,32 +296,24 @@ public class GatewayAutoConfiguration {
 
 	@Bean
 	@Primary
+	// 4.5
 	//TODO: property to disable composite?
 	public RouteLocator cachedCompositeRouteLocator(List<RouteLocator> routeLocators) {
 		return new CachingRouteLocator(new CompositeRouteLocator(Flux.fromIterable(routeLocators)));
 	}
 
+	// route 刷新监听器
 	@Bean
 	public RouteRefreshListener routeRefreshListener(ApplicationEventPublisher publisher) {
 		return new RouteRefreshListener(publisher);
 	}
 
-	@Bean
-	public FilteringWebHandler filteringWebHandler(List<GlobalFilter> globalFilters) {
-		return new FilteringWebHandler(globalFilters);
-	}
 
+	// 用以查找匹配到bean, 并进行处理
 	@Bean
 	public RoutePredicateHandlerMapping routePredicateHandlerMapping(FilteringWebHandler webHandler,
 																	   RouteLocator routeLocator) {
 		return new RoutePredicateHandlerMapping(webHandler, routeLocator);
-	}
-
-	// ConfigurationProperty beans
-
-	@Bean
-	public GatewayProperties gatewayProperties() {
-		return new GatewayProperties();
 	}
 
 	@Bean
@@ -353,7 +360,7 @@ public class GatewayAutoConfiguration {
 	}*/
 
 	// Predicate Factory beans
-
+	// ------------------------------------- RoutePredicateFactory  ----------------------------------------------------------
 	@Bean
 	public AfterRoutePredicateFactory afterRoutePredicateFactory() {
 		return new AfterRoutePredicateFactory();
@@ -410,8 +417,10 @@ public class GatewayAutoConfiguration {
 		return new WeightRoutePredicateFactory();
 	}
 
-	// GatewayFilter Factory beans
+	// -------------------------------- RoutePredicateFactroy 定义结束  -----------------------------------------
 
+	// GatewayFilter Factory beans
+	// --------------------------------- PrefixPathGatewayFilterFactory 定义开始  -----------------------------
 	@Bean
 	public AddRequestHeaderGatewayFilterFactory addRequestHeaderGatewayFilterFactory() {
 		return new AddRequestHeaderGatewayFilterFactory();
@@ -436,7 +445,7 @@ public class GatewayAutoConfiguration {
 		}
 	}
 
-	@Bean
+	@Bean // TODO 需要详细解释
 	public PrefixPathGatewayFilterFactory prefixPathGatewayFilterFactory() {
 		return new PrefixPathGatewayFilterFactory();
 	}
@@ -518,6 +527,9 @@ public class GatewayAutoConfiguration {
 		return new StripPrefixGatewayFilterFactory();
 	}
 
+	// --------------------------------- PrefixPathGatewayFilterFactory 结束  -----------------------------
+
+	// 提供一个route 的管理接口， 支持刷新route， 获取globalfilters，获取routefilters， 获取routes列表， 增加，删除
 	@Configuration
 	@ConditionalOnClass(Health.class)
 	protected static class GatewayActuatorConfiguration {

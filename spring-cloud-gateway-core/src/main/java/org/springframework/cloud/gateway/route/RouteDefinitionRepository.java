@@ -18,6 +18,7 @@
 package org.springframework.cloud.gateway.route;
 
 /**
+ * RouteDefinition仓库， 支持route的获取，保存，删除
  * @author Spencer Gibb
  */
 public interface RouteDefinitionRepository extends RouteDefinitionLocator, RouteDefinitionWriter {

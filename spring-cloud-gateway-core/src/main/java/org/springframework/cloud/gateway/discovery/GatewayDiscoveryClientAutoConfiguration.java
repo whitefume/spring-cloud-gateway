@@ -35,6 +35,11 @@ import org.springframework.web.reactive.DispatcherHandler;
 @ConditionalOnClass({DispatcherHandler.class, DiscoveryClient.class})
 public class GatewayDiscoveryClientAutoConfiguration {
 
+	/**
+	 * 通过调用DiscoveryClient获取注册中心的服务列表，生成对应的RouteDefinition数组
+	 * @param discoveryClient
+	 * @return
+	 */
 	@Bean
 	@ConditionalOnBean(DiscoveryClient.class)
 	@ConditionalOnProperty(name = "spring.cloud.gateway.discovery.locator.enabled")

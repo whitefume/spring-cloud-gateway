@@ -54,8 +54,10 @@ public class DiscoveryClientRouteDefinitionLocator implements RouteDefinitionLoc
 	public Flux<RouteDefinition> getRouteDefinitions() {
 		return Flux.fromIterable(discoveryClient.getServices())
 				.map(serviceId -> {
+					// 设置ID， url
 					RouteDefinition routeDefinition = new RouteDefinition();
 					routeDefinition.setId(this.routeIdPrefix + serviceId);
+					// LocadBalancerClientFilter 根据lb:// 前缀过滤处理，负载均衡，选择最终调用服务地址
 					routeDefinition.setUri(URI.create("lb://" + serviceId));
 
 					// add a predicate that matches the url at /serviceId

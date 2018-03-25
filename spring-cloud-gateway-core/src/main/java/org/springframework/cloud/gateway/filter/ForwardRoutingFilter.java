@@ -14,6 +14,22 @@ import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.s
 
 import reactor.core.publisher.Mono;
 
+/**
+ * 加入配置
+ * spring:
+ *     application:
+ *         name: api-gateway
+ *     cloud:
+ *         gateway:
+ *              routes:
+ *                  id: forward_sample
+ *                  uri: forward:///globalfilters
+ *                  order: 10000
+ *                  predicates:
+ *                     Path=/globalfilters
+ *                  filters:
+ *                     PrefixPath=/application/gateway
+ */
 public class ForwardRoutingFilter implements GlobalFilter, Ordered {
 
 	private static final Log log = LogFactory.getLog(ForwardRoutingFilter.class);
@@ -31,8 +47,10 @@ public class ForwardRoutingFilter implements GlobalFilter, Ordered {
 
 	@Override
 	public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+		// 获得RouteToRequestUrlFilter产生的URL
 		URI requestUrl = exchange.getRequiredAttribute(GATEWAY_REQUEST_URL_ATTR);
 
+		// 判断是否可以处理，标记已经被路由，
 		String scheme = requestUrl.getScheme();
 		if (isAlreadyRouted(exchange) || !"forward".equals(scheme)) {
 			return chain.filter(exchange);

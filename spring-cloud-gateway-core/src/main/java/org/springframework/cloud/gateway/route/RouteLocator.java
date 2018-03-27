@@ -20,7 +20,7 @@ package org.springframework.cloud.gateway.route;
 import reactor.core.publisher.Flux;
 
 /**
- * 路由定位器
+ * 路由定位器: 可以直接定义Route，也可以通过RouteDefinition转换成Route
  * @author Spencer Gibb
  */
 //TODO: rename to Routes?

@@ -57,6 +57,7 @@ import static org.springframework.cloud.gateway.support.ShortcutConfigurable.nor
 import reactor.core.publisher.Flux;
 
 /**
+ * 从RouteDefinitionLocator获取RouteDefinition转换成Route
  * {@link RouteLocator} that loads routes from a {@link RouteDefinitionLocator}
  * @author Spencer Gibb
  */
@@ -77,11 +78,11 @@ public class RouteDefinitionRouteLocator implements RouteLocator, BeanFactoryAwa
 									   GatewayProperties gatewayProperties) {
 		// 设置RouteDefinitionLocator
 		this.routeDefinitionLocator = routeDefinitionLocator;
-		// 初始化RoutePredicateFactory, key 为RoutePredicateFactory:name()
+		// 初始化RoutePredicateFactory, key 为RoutePredicateFactory:name()，通过它将RouteDefintion.predicates转换成Route.predicates
 		initFactories(predicates);
-		// 初始化RoutePredicateFactory
+		// 初始化RouteFilterFactory, key 为GatewayFilterFactory:name(), 将RouteDefinition.filter转换成Route.filters
 		gatewayFilterFactories.forEach(factory -> this.gatewayFilterFactories.put(factory.name(), factory));
-		// 设置 GatewayProperties
+		// 设置 GatewayProperties,使用GatewayProperties.defaultFilters默认过滤器定义数组，添加到每个route
 		this.gatewayProperties = gatewayProperties;
 	}
 
@@ -136,7 +137,7 @@ public class RouteDefinitionRouteLocator implements RouteLocator, BeanFactoryAwa
 	private Route convertToRoute(RouteDefinition routeDefinition) {
 		// 合并 Predicate， 将RouteDefinition.predicates数组合并一个java.util.funcion.Predicate
 		Predicate<ServerWebExchange> predicate = combinePredicates(routeDefinition);
-		// 获得 GatewayFilter
+		// 获得 GatewayFilter， 将FilterDefinition 转换成GatewayFilter
 		List<GatewayFilter> gatewayFilters = getFilters(routeDefinition);
 		// 构建Route
 		return Route.builder(routeDefinition)

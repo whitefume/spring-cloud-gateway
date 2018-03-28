@@ -17,16 +17,16 @@
 
 package org.springframework.cloud.gateway.handler.predicate;
 
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.server.ServerWebExchange;
+
+import javax.validation.constraints.NotEmpty;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Predicate;
 
-import javax.validation.constraints.NotEmpty;
-
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.server.ServerWebExchange;
-
 /**
+ * Route 匹配 ：请求指定 Cookie 正则匹配指定值。
  * @author Spencer Gibb
  */
 public class HeaderRoutePredicateFactory extends AbstractRoutePredicateFactory<HeaderRoutePredicateFactory.Config> {

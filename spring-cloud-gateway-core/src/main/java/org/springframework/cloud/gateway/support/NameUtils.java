@@ -30,6 +30,9 @@ public class NameUtils {
 		return GENERATED_NAME_PREFIX + i;
 	}
 
+	/**
+	 * 该方法截取类名前半段，例如 QueryRoutePredicateFactory 的结果为 Query
+	 */
 	public static String normalizeRoutePredicateName(Class<? extends RoutePredicateFactory> clazz) {
 		return removeGarbage(clazz.getSimpleName().replace(RoutePredicateFactory.class.getSimpleName(), ""));
 	}

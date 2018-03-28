@@ -17,17 +17,17 @@
 
 package org.springframework.cloud.gateway.handler.predicate;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.function.Predicate;
-
-import javax.validation.constraints.NotEmpty;
-
 import org.springframework.http.HttpCookie;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.server.ServerWebExchange;
 
+import javax.validation.constraints.NotEmpty;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Predicate;
+
 /**
+ * Route 匹配 ：请求指定 Cookie 正则匹配指定值。 Cookie=chocolate, ch.p
  * @author Spencer Gibb
  */
 public class CookieRoutePredicateFactory extends AbstractRoutePredicateFactory<CookieRoutePredicateFactory.Config> {

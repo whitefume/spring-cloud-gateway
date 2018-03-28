@@ -17,14 +17,13 @@
 
 package org.springframework.cloud.gateway.filter;
 
+import org.springframework.cloud.gateway.support.NameUtils;
+import org.springframework.validation.annotation.Validated;
+
+import javax.validation.constraints.NotNull;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.validation.constraints.NotNull;
-
-import org.springframework.cloud.gateway.support.NameUtils;
-import org.springframework.validation.annotation.Validated;
 
 import static org.springframework.util.StringUtils.tokenizeToStringArray;
 
@@ -40,6 +39,12 @@ public class FilterDefinition {
 	public FilterDefinition() {
 	}
 
+	/**
+	 * 根据 text 创建 FilterDefinition
+	 *
+	 * @param text 格式 ${name}=${args[0]},${args[1]}...${args[n]}
+	 *             例如 AddRequestParameter=foo, bar
+	 */
 	public FilterDefinition(String text) {
 		int eqIdx = text.indexOf("=");
 		if (eqIdx <= 0) {

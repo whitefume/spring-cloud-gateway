@@ -17,14 +17,14 @@
 
 package org.springframework.cloud.gateway.handler.predicate;
 
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-
 import org.springframework.cloud.gateway.support.Configurable;
 import org.springframework.cloud.gateway.support.NameUtils;
 import org.springframework.cloud.gateway.support.ShortcutConfigurable;
 import org.springframework.tuple.Tuple;
 import org.springframework.web.server.ServerWebExchange;
+
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 /**
  * @author Spencer Gibb
@@ -61,6 +61,10 @@ public interface RoutePredicateFactory<C> extends ShortcutConfigurable, Configur
 	}
 
 	//TODO: remove default impl after apply(Tuple) removed
+
+	/**
+	 * 接口方法，创建 Predicate 。
+	 */
 	default Predicate<ServerWebExchange> apply(C config) {
 		throw new UnsupportedOperationException("apply(C config) not implemented");
 	}

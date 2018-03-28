@@ -17,13 +17,13 @@
 
 package org.springframework.cloud.gateway.route;
 
-import javax.validation.constraints.NotEmpty;
 import org.springframework.cloud.gateway.filter.FilterDefinition;
 import org.springframework.cloud.gateway.handler.predicate.PredicateDefinition;
 import org.springframework.validation.annotation.Validated;
 
 import javax.validation.Valid;
 import javax.validation.ValidationException;
+import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.net.URI;
 import java.util.ArrayList;
@@ -55,6 +55,11 @@ public class RouteDefinition {
 
 	public RouteDefinition() {}
 
+	/**
+	 * 通过字符串创建RouteDefinition
+	 *  格式 ${id}=${uri},${predicates[0]},${predicates[1]}...${predicates[n]}
+	 *             例如 route001=http://127.0.0.1,Host=**.addrequestparameter.org,Path=/get
+	 */
 	public RouteDefinition(String text) {
 		int eqIdx = text.indexOf("=");
 		if (eqIdx <= 0) {

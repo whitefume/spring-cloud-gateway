@@ -17,6 +17,11 @@
 
 package org.springframework.cloud.gateway.handler.predicate;
 
+import org.springframework.util.Assert;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.server.ServerWebExchange;
+
+import javax.validation.constraints.NotEmpty;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -24,13 +29,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Predicate;
 
-import org.springframework.util.Assert;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.server.ServerWebExchange;
-
-import javax.validation.constraints.NotEmpty;
-
 /**
+ * Route 匹配 ：请求时间满足在配置时间之间。 Betweeen=2017-01-20T17:42:47.789-07:00[America/Denver], 2017-01-21T17:42:47.789-07:00[America/Denver]
  * @author Spencer Gibb
  */
 public class BetweenRoutePredicateFactory extends AbstractRoutePredicateFactory<BetweenRoutePredicateFactory.Config> {
@@ -101,6 +101,7 @@ public class BetweenRoutePredicateFactory extends AbstractRoutePredicateFactory<
 	public static ZonedDateTime parseZonedDateTime(String dateString) {
 		ZonedDateTime dateTime;
 		try {
+			// 数字
 			long epoch = Long.parseLong(dateString);
 
 			dateTime = Instant.ofEpochMilli(epoch).atOffset(ZoneOffset.ofTotalSeconds(0))

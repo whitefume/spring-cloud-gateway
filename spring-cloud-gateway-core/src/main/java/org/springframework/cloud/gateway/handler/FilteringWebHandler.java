@@ -49,6 +49,9 @@ import reactor.core.publisher.Mono;
 public class FilteringWebHandler implements WebHandler {
 	protected static final Log logger = LogFactory.getLog(FilteringWebHandler.class);
 
+	/**
+	 * 全局过滤器
+	 */
 	private final List<GatewayFilter> globalFilters;
 
 	public FilteringWebHandler(List<GlobalFilter> globalFilters) {
@@ -74,6 +77,7 @@ public class FilteringWebHandler implements WebHandler {
 
 	@Override
 	public Mono<Void> handle(ServerWebExchange exchange) {
+		// 获得 Route
 		Route route = exchange.getRequiredAttribute(GATEWAY_ROUTE_ATTR);
 
 		// 获得GatewayFilter 组合默认和route自定义

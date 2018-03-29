@@ -17,13 +17,14 @@
 
 package org.springframework.cloud.gateway.filter.factory;
 
-import java.util.Arrays;
-import java.util.List;
-
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**
+ * 移除请求头 RemoveRequestHeader=X-Request-Foo
  * @author Spencer Gibb
  */
 public class RemoveRequestHeaderGatewayFilterFactory extends AbstractGatewayFilterFactory<AbstractGatewayFilterFactory.NameConfig> {

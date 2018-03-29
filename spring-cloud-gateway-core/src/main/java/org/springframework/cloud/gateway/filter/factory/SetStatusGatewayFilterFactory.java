@@ -17,18 +17,26 @@
 
 package org.springframework.cloud.gateway.filter.factory;
 
-import java.util.Arrays;
-import java.util.List;
-
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
 import org.springframework.http.HttpStatus;
+import reactor.core.publisher.Mono;
+
+import java.util.Arrays;
+import java.util.List;
 
 import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.setResponseStatus;
 
-import reactor.core.publisher.Mono;
-
 /**
+ * 提供单一状态参数
+ * - id: setstatusstring_route
+ * uri: http://example.org
+ * filters:
+ * - SetStatus=BAD_REQUEST
+ * - id: setstatusint_route
+ * uri: http://example.org
+ * filters:
+ - SetStatus=401
  * @author Spencer Gibb
  */
 public class SetStatusGatewayFilterFactory extends AbstractGatewayFilterFactory<SetStatusGatewayFilterFactory.Config> {

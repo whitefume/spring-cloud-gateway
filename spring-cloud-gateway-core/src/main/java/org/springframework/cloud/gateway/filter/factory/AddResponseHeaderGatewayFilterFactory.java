@@ -20,6 +20,7 @@ package org.springframework.cloud.gateway.filter.factory;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 
 /**
+ * 增加应答头AddResponseHeader=X-Response-Foo, Bar
  * @author Spencer Gibb
  */
 public class AddResponseHeaderGatewayFilterFactory extends AbstractNameValueGatewayFilterFactory {

@@ -17,14 +17,14 @@
 
 package org.springframework.cloud.gateway.filter.factory;
 
+import org.springframework.cloud.gateway.filter.GatewayFilter;
+import reactor.core.publisher.Mono;
+
 import java.util.Arrays;
 import java.util.List;
 
-import org.springframework.cloud.gateway.filter.GatewayFilter;
-
-import reactor.core.publisher.Mono;
-
 /**
+ * 移除应答头内容 RemoveResponseHeader=X-Response-Foo
  * @author Spencer Gibb
  */
 public class RemoveResponseHeaderGatewayFilterFactory extends AbstractGatewayFilterFactory<AbstractGatewayFilterFactory.NameConfig> {

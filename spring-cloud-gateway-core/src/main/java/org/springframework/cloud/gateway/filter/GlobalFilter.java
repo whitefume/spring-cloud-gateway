@@ -18,15 +18,13 @@
 package org.springframework.cloud.gateway.filter;
 
 import org.springframework.web.server.ServerWebExchange;
-import org.springframework.cloud.gateway.filter.GatewayFilterChain;
-
 import reactor.core.publisher.Mono;
 
 /**
  * Contract for interception-style, chained processing of Web requests that may
  * be used to implement cross-cutting, application-agnostic requirements such
  * as security, timeouts, and others.
- *
+ * GlobalFilter 会作用到所有的 Route 上。
  * @author Rossen Stoyanchev
  * @since 5.0
  */

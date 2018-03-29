@@ -22,6 +22,7 @@ import org.springframework.cloud.gateway.filter.GatewayFilter;
 import reactor.core.publisher.Mono;
 
 /**
+ * 设置应答头内容 SetResponseHeader=X-Response-Foo, Bar
  * @author Spencer Gibb
  */
 public class SetResponseHeaderGatewayFilterFactory extends AbstractNameValueGatewayFilterFactory {

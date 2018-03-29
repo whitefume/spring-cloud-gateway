@@ -21,6 +21,7 @@ import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 
 /**
+ * 用途 ：添加指定请求 Header 为指定值。AddRequestHeader=X-Request-Foo, Bar
  * @author Spencer Gibb
  */
 public class AddRequestHeaderGatewayFilterFactory extends AbstractNameValueGatewayFilterFactory {
@@ -28,10 +29,11 @@ public class AddRequestHeaderGatewayFilterFactory extends AbstractNameValueGatew
 	@Override
 	public GatewayFilter apply(NameValueConfig config) {
 		return (exchange, chain) -> {
+			// 创建新的 ServerHttpRequest
 			ServerHttpRequest request = exchange.getRequest().mutate()
 					.header(config.getName(), config.getValue())
 					.build();
-
+			// 创建新的 ServerWebExchange ，提交过滤器链继续过滤 TODO mutate() 不明白
 			return chain.filter(exchange.mutate().request(request).build());
 		};
     }

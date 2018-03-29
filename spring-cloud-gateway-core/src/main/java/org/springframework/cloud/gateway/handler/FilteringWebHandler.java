@@ -17,13 +17,10 @@
 
 package org.springframework.cloud.gateway.handler;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
+import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.cloud.gateway.filter.OrderedGatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.GatewayFilterFactory;
@@ -31,12 +28,14 @@ import org.springframework.cloud.gateway.route.Route;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.AnnotationAwareOrderComparator;
 import org.springframework.web.server.ServerWebExchange;
-import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.web.server.WebHandler;
+import reactor.core.publisher.Mono;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR;
-
-import reactor.core.publisher.Mono;
 
 /**
  * WebHandler that delegates to a chain of {@link GlobalFilter} instances and
@@ -61,6 +60,8 @@ public class FilteringWebHandler implements WebHandler {
 	private static List<GatewayFilter> loadFilters(List<GlobalFilter> filters) {
 		return filters.stream()
 				.map(filter -> {
+					// 当 GlobalFilter 子类没有实现了 org.springframework.core.Ordered 接口，
+					// 在 AnnotationAwareOrderComparator#sort(List) 排序时，顺序值为 Integer.MAX_VALUE 。
 					GatewayFilterAdapter gatewayFilter = new GatewayFilterAdapter(filter);
 					if (filter instanceof Ordered) {
 						int order = ((Ordered) filter).getOrder();
@@ -115,6 +116,9 @@ public class FilteringWebHandler implements WebHandler {
 		}
 	}
 
+	/**
+	 * 在 GatewayFilterChain 使用 GatewayFilter 过滤请求，所以通过 GatewayFilterAdapter 将 GlobalFilter 适配成 GatewayFilter
+	 */
 	private static class GatewayFilterAdapter implements GatewayFilter {
 
 		private final GlobalFilter delegate;

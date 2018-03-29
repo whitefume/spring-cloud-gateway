@@ -17,14 +17,15 @@
 
 package org.springframework.cloud.gateway.filter.factory;
 
-import java.net.URI;
-
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.util.StringUtils;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.net.URI;
+
 /**
+ * 对请求增加查询参数 AddRequestParameter=foo, bar
  * @author Spencer Gibb
  */
 public class AddRequestParameterGatewayFilterFactory extends AbstractNameValueGatewayFilterFactory {

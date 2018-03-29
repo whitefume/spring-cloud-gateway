@@ -17,22 +17,25 @@
 
 package org.springframework.cloud.gateway.filter.factory;
 
+import org.springframework.cloud.gateway.filter.GatewayFilter;
+import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.web.util.UriTemplate;
+import org.springframework.web.util.pattern.PathPattern.PathMatchInfo;
+
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.cloud.gateway.filter.GatewayFilter;
-import org.springframework.http.server.reactive.ServerHttpRequest;
-import org.springframework.web.util.UriTemplate;
-import org.springframework.web.util.pattern.PathPattern.PathMatchInfo;
-
-import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.GATEWAY_REQUEST_URL_ATTR;
-import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.URI_TEMPLATE_VARIABLES_ATTRIBUTE;
-import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.addOriginalRequestUrl;
+import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.*;
 
 /**
+ * 根据请求模板进行修改
+ * predicates:
+ * - Path=/foo/{segment}
+ * filters:
+ * - SetPath=/{segment}
  * @author Spencer Gibb
  */
 public class SetPathGatewayFilterFactory extends AbstractGatewayFilterFactory<SetPathGatewayFilterFactory.Config> {

@@ -17,16 +17,18 @@
 
 package org.springframework.cloud.gateway.filter.factory;
 
-import java.util.Arrays;
-import java.util.List;
-
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.http.server.reactive.ServerHttpRequest;
+
+import java.util.Arrays;
+import java.util.List;
 
 import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.GATEWAY_REQUEST_URL_ATTR;
 import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.addOriginalRequestUrl;
 
 /**
+ * 根据配置的正则表达式 regexp ，使用配置的 replacement 重写请求 Path 。
+ * RewritePath=/foo/(?<segment>.*), /$\{segment}
  * @author Spencer Gibb
  */
 public class RewritePathGatewayFilterFactory extends AbstractGatewayFilterFactory<RewritePathGatewayFilterFactory.Config> {
@@ -45,19 +47,25 @@ public class RewritePathGatewayFilterFactory extends AbstractGatewayFilterFactor
 
 	@Override
 	public GatewayFilter apply(Config config) {
+		// 注意，$\ 用于替代 $ ，避免和 YAML 语法冲突。
 		String replacement = config.replacement.replace("$\\", "$");
 		return (exchange, chain) -> {
 			ServerHttpRequest req = exchange.getRequest();
+			// 添加 原始请求URI 到 GATEWAY_ORIGINAL_REQUEST_URL_ATTR
 			addOriginalRequestUrl(exchange, req.getURI());
+			// 重写 Path
 			String path = req.getURI().getPath();
 			String newPath = path.replaceAll(config.regexp, replacement);
 
+			// 创建新的 ServerHttpRequest
 			ServerHttpRequest request = req.mutate()
 					.path(newPath)
 					.build();
 
+			// 添加 请求URI 到 GATEWAY_REQUEST_URL_ATTR
 			exchange.getAttributes().put(GATEWAY_REQUEST_URL_ATTR, request.getURI());
 
+			// 创建新的 ServerWebExchange ，提交过滤器链继续过滤
 			return chain.filter(exchange.mutate().request(request).build());
 		};
 	}

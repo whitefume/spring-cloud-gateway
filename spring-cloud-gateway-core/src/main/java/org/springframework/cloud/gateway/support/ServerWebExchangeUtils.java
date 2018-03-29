@@ -17,13 +17,13 @@
 
 package org.springframework.cloud.gateway.support;
 
-import java.net.URI;
-import java.util.LinkedHashSet;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ServerWebExchange;
+
+import java.net.URI;
+import java.util.LinkedHashSet;
 
 /**
  * @author Spencer Gibb
@@ -90,6 +90,7 @@ public class ServerWebExchangeUtils {
 	}
 
 	public static void addOriginalRequestUrl(ServerWebExchange exchange, URI url) {
+		// 为什么使用 LinkedHashSet ？因为可以使用 RewritePathGatewayFilterFactory / PrefixPathGatewayFilterFactory 多次重写。
 		exchange.getAttributes().computeIfAbsent(GATEWAY_ORIGINAL_REQUEST_URL_ATTR, s -> new LinkedHashSet<>());
 		LinkedHashSet<URI> uris = exchange.getRequiredAttribute(GATEWAY_ORIGINAL_REQUEST_URL_ATTR);
 		// 为什么使用LinkedHashSet ，因为RewritePathGatewayFilterFactor/ PrefixPathGatewayFilterFactory 多次重写

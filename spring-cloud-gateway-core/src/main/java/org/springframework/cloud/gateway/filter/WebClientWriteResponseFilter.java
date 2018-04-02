@@ -24,12 +24,12 @@ import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.web.reactive.function.BodyExtractors;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Mono;
 
 import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.CLIENT_RESPONSE_ATTR;
 
-import reactor.core.publisher.Mono;
-
 /**
+ * Http 回写响应网关过滤器。
  * @author Spencer Gibb
  */
 public class WebClientWriteResponseFilter implements GlobalFilter, Ordered {

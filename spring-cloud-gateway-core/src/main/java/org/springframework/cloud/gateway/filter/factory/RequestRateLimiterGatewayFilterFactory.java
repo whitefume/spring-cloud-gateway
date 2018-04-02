@@ -25,6 +25,20 @@ import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
 import org.springframework.http.HttpStatus;
 
 /**
+ * RequestRateLimiterGatewayFilter 使用 Redis + Lua 实现分布式限流。而限流的粒度，例如 URL / 用户 / IP  KeyResolver 实现类决定
+ * spring:
+ *   cloud:
+ *     gateway:
+ *       routes:
+ *     - id: default_path_to_httpbin
+ *       uri: http://127.0.0.1:8081
+ *       order: 10000
+ *       predicates:
+ *       - Path=/**
+ *       filters:
+ *       - RequestRateLimiter=10, 20, #{@principalNameKeyResolver}
+ *
+ *
  * User Request Rate Limiter filter. See https://stripe.com/blog/rate-limiters and
  */
 public class RequestRateLimiterGatewayFilterFactory extends AbstractGatewayFilterFactory<RequestRateLimiterGatewayFilterFactory.Config> {
@@ -32,12 +46,15 @@ public class RequestRateLimiterGatewayFilterFactory extends AbstractGatewayFilte
 	public static final String KEY_RESOLVER_KEY = "keyResolver";
 
 	private final RateLimiter defaultRateLimiter;
+	// 限流键解析器 Bean 对象名字，根据 #{@beanName} ，使用 SpEL 表达式，从 Spring 容器中获取 Bean 对象，
 	private final KeyResolver defaultKeyResolver;
 
 	public RequestRateLimiterGatewayFilterFactory(RateLimiter defaultRateLimiter,
 												  KeyResolver defaultKeyResolver) {
 		super(Config.class);
+		// 默认 RedisRateLimiter
 		this.defaultRateLimiter = defaultRateLimiter;
+		// 默认 PrincipalNameKeyResolver
 		this.defaultKeyResolver = defaultKeyResolver;
 	}
 
@@ -57,15 +74,19 @@ public class RequestRateLimiterGatewayFilterFactory extends AbstractGatewayFilte
 
 		return (exchange, chain) -> {
 			Route route = exchange.getAttribute(ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR);
-
+			// 调用 KeyResolver#resolve(ServerWebExchange) 方法，获得请求的限流键。
 			return resolver.resolve(exchange).flatMap(key ->
-					// TODO: if key is empty?
+					// 这里未处理限流键为空的情况. 所以，当限流键为空时，过滤器链不会继续向下执行，
+					// 也就是说，不会请求后端 Http / Websocket 服务，并且最终返回客户端 200 状态码，内容为空。
 					limiter.isAllowed(route.getId(), key).flatMap(response -> {
 						// TODO: set some headers for rate, tokens left
 
+						// 允许访问
 						if (response.isAllowed()) {
 							return chain.filter(exchange);
 						}
+
+						// 被限流，不允许访问
 						exchange.getResponse().setStatusCode(HttpStatus.TOO_MANY_REQUESTS);
 						return exchange.getResponse().setComplete();
 					}));
@@ -73,7 +94,9 @@ public class RequestRateLimiterGatewayFilterFactory extends AbstractGatewayFilte
 	}
 
 	public static class Config {
+		// 令牌桶上限 。
 		private KeyResolver keyResolver;
+		// 令牌桶填充平均速率，单位：秒。
 		private RateLimiter rateLimiter;
 
 

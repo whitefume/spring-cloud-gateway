@@ -17,9 +17,6 @@
 
 package org.springframework.cloud.gateway.filter;
 
-import java.net.URI;
-import java.util.Map;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.cloud.client.ServiceInstance;
@@ -27,14 +24,18 @@ import org.springframework.cloud.client.loadbalancer.LoadBalancerClient;
 import org.springframework.cloud.gateway.support.NotFoundException;
 import org.springframework.core.Ordered;
 import org.springframework.web.server.ServerWebExchange;
-
-import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.GATEWAY_REQUEST_URL_ATTR;
-import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.GATEWAY_SCHEME_PREFIX_ATTR;
-import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.addOriginalRequestUrl;
-
 import reactor.core.publisher.Mono;
 
+import java.net.URI;
+import java.util.Map;
+
+import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.*;
+
 /**
+ * LoadBalancerClientFilter 根据 lb:// 前缀过滤处理，使用 serviceId 选择一个服务实例，从而实现负载均衡。
+ * DiscoveryClientRouteDefinitionLocator 负责生成lib://前缀的url
+ * RoutePredicateHandlerMapping 使用 CachingRouteLocator 来获取 Route 信息。
+ * 在 Spring Cloud Gateway 启动后，如果有新加入的服务，则需要刷新 CachingRouteLocator 缓存。
  * @author Spencer Gibb
  * @author Tim Ysewyn
  */

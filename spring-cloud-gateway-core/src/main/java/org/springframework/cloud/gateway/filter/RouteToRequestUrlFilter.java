@@ -17,22 +17,18 @@
 
 package org.springframework.cloud.gateway.filter;
 
-import java.net.URI;
-import java.util.regex.Pattern;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.cloud.gateway.route.Route;
 import org.springframework.core.Ordered;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.util.UriComponentsBuilder;
-
-import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.GATEWAY_REQUEST_URL_ATTR;
-import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR;
-import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.GATEWAY_SCHEME_PREFIX_ATTR;
-import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.containsEncodedParts;
-
 import reactor.core.publisher.Mono;
+
+import java.net.URI;
+import java.util.regex.Pattern;
+
+import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.*;
 
 /**
  * 根据Route，组成请求路径URL
@@ -55,7 +51,7 @@ public class RouteToRequestUrlFilter implements GlobalFilter, Ordered {
 	@Override
 	public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
 
-		// 获得Route
+		// 获得Route @RoutePredicateHandlerMapping 获得route
 		Route route = exchange.getAttribute(GATEWAY_ROUTE_ATTR);
 		if (route == null) {
 			return chain.filter(exchange);
@@ -75,7 +71,7 @@ public class RouteToRequestUrlFilter implements GlobalFilter, Ordered {
 			routeUri = URI.create(routeUri.getSchemeSpecificPart());
 		}
 
-		// 拼接requestUrl
+		// 拼接requestUrl 注意下，如果 Route.uri 属性配置带有 Path ，则会覆盖请求的 Path
 		URI requestUrl = UriComponentsBuilder.fromUri(uri)
 				.uri(routeUri)
 				.build(encoded)

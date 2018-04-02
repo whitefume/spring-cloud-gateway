@@ -17,19 +17,11 @@
 
 package org.springframework.cloud.gateway.filter;
 
-import java.net.URI;
-import java.util.List;
-
 import io.netty.handler.codec.http.DefaultHttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
-import org.springframework.cloud.gateway.filter.headers.HttpHeadersFilter.Type;
-import reactor.core.publisher.Mono;
-import reactor.ipc.netty.NettyPipeline;
-import reactor.ipc.netty.http.client.HttpClient;
-import reactor.ipc.netty.http.client.HttpClientRequest;
-
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.cloud.gateway.filter.headers.HttpHeadersFilter;
+import org.springframework.cloud.gateway.filter.headers.HttpHeadersFilter.Type;
 import org.springframework.core.Ordered;
 import org.springframework.core.io.buffer.NettyDataBuffer;
 import org.springframework.http.HttpHeaders;
@@ -37,16 +29,21 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Mono;
+import reactor.ipc.netty.NettyPipeline;
+import reactor.ipc.netty.http.client.HttpClient;
+import reactor.ipc.netty.http.client.HttpClientRequest;
+
+import java.net.URI;
+import java.util.List;
 
 import static org.springframework.cloud.gateway.filter.headers.HttpHeadersFilter.filterRequest;
-import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.CLIENT_RESPONSE_ATTR;
-import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.GATEWAY_REQUEST_URL_ATTR;
-import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.PRESERVE_HOST_HEADER_ATTRIBUTE;
-import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.isAlreadyRouted;
-import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.setAlreadyRouted;
+import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.*;
 
 /**
  * 根据http https 前缀(scheme) 过滤处理， 根据ntty实现HttpClient请求后端服务
+ * NettyWriteResponseFilter ，与 NettyRoutingFilter 成对使用的网关过滤器。
+ * 其将 NettyRoutingFilter 请求后端 Http 服务的响应写回客户端。
  * @author Spencer Gibb
  * @author Biju Kunjummen
  */
@@ -83,6 +80,8 @@ public class NettyRoutingFilter implements GlobalFilter, Ordered {
 
 		ServerHttpRequest request = exchange.getRequest();
 
+		// 创建 Netty Request Method 对象。request#getMethod()
+		// 返回的不是 io.netty.handler.codec.http.HttpMethod ，所以需要进行转换。
 		final HttpMethod method = HttpMethod.valueOf(request.getMethod().toString());
 		final String url = requestUrl.toString();
 
@@ -105,6 +104,7 @@ public class NettyRoutingFilter implements GlobalFilter, Ordered {
 					.chunkedTransfer(chunkedTransfer)
 					.failOnServerError(false)
 					.failOnClientError(false); // 是否请求失败抛出异常
+			// 设置请求失败( 后端服务返回响应状体码 >= 400 )时，不抛出异常。
 
 			if (preserveHost) {
 				String host = request.getHeaders().getFirst(HttpHeaders.HOST);

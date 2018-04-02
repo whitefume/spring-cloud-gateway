@@ -17,11 +17,11 @@
 
 package org.springframework.cloud.gateway.filter.factory;
 
-import java.net.URI;
-import java.util.Arrays;
-import java.util.List;
-import java.util.function.Function;
-
+import com.netflix.hystrix.HystrixCommandGroupKey;
+import com.netflix.hystrix.HystrixCommandKey;
+import com.netflix.hystrix.HystrixObservableCommand;
+import com.netflix.hystrix.HystrixObservableCommand.Setter;
+import com.netflix.hystrix.exception.HystrixRuntimeException;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.http.HttpStatus;
@@ -29,24 +29,32 @@ import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.web.reactive.DispatcherHandler;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.util.UriComponentsBuilder;
-
-import com.netflix.hystrix.HystrixCommandGroupKey;
-import com.netflix.hystrix.HystrixCommandKey;
-import com.netflix.hystrix.HystrixObservableCommand;
-import com.netflix.hystrix.HystrixObservableCommand.Setter;
-import com.netflix.hystrix.exception.HystrixRuntimeException;
-
-import static com.netflix.hystrix.exception.HystrixRuntimeException.FailureType.TIMEOUT;
-import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.GATEWAY_REQUEST_URL_ATTR;
-import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.containsEncodedParts;
-import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.setResponseStatus;
-
 import reactor.core.publisher.Mono;
 import rx.Observable;
 import rx.RxReactiveStreams;
 import rx.Subscription;
 
+import java.net.URI;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Function;
+
+import static com.netflix.hystrix.exception.HystrixRuntimeException.FailureType.TIMEOUT;
+import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.*;
+
 /**
+ * ，实现基于 Route 级别的熔断功能。
+ * spring:
+ *   cloud:
+ *     gateway:
+ *       routes:
+ *         - id: default_path_to_httpbin
+ *           uri: http://127.0.0.1:8081
+ *           order: 10000
+ *           predicates:
+ *         - Path=/**
+ *           filters:
+ *             - Hystrix=myCommandName
  * @author Spencer Gibb
  */
 public class HystrixGatewayFilterFactory extends AbstractGatewayFilterFactory<HystrixGatewayFilterFactory.Config> {
@@ -80,7 +88,9 @@ public class HystrixGatewayFilterFactory extends AbstractGatewayFilterFactory<Hy
 			RouteHystrixCommand command = new RouteHystrixCommand(config.setter, config.fallbackUri, exchange, chain);
 
 			return Mono.create(s -> {
+				// 使用 Hystrix Command Observable 订阅
 				Subscription sub = command.toObservable().subscribe(s::success, s::error, s::success);
+				// Mono 取消时，取消 Hystrix Command Observable 的订阅，结束 Hystrix Command 的执行
 				s.onCancel(sub::unsubscribe);
 			}).onErrorResume((Function<Throwable, Mono<Void>>) throwable -> {
 				if (throwable instanceof HystrixRuntimeException) {

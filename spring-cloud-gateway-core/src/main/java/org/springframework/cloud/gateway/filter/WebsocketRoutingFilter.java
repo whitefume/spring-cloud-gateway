@@ -1,14 +1,5 @@
 package org.springframework.cloud.gateway.filter;
 
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import reactor.core.publisher.Mono;
-
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.cloud.gateway.filter.headers.HttpHeadersFilter;
 import org.springframework.core.Ordered;
@@ -19,14 +10,33 @@ import org.springframework.web.reactive.socket.WebSocketSession;
 import org.springframework.web.reactive.socket.client.WebSocketClient;
 import org.springframework.web.reactive.socket.server.WebSocketService;
 import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Mono;
+
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.springframework.cloud.gateway.filter.headers.HttpHeadersFilter.filterRequest;
-import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.GATEWAY_REQUEST_URL_ATTR;
-import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.isAlreadyRouted;
-import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.setAlreadyRouted;
+import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.*;
 import static org.springframework.util.StringUtils.commaDelimitedListToStringArray;
 
 /**
+ * Websocket 路由网关过滤器。其根据 ws:// / wss:// 前缀( Scheme )过滤处理，代理后端 Websocket 服务，提供给客户端连接
+ * cloud:
+ *   gateway:
+ *      routes:
+ *        - id: websocket_test
+ *          uri: ws://localhost:9000
+ *          order: 8000
+ *          predicates:
+ *            - Path=/echo
+ *
+ *
+ *
+ *
  * @author Spencer Gibb
  */
 public class WebsocketRoutingFilter implements GlobalFilter, Ordered {
@@ -39,7 +49,9 @@ public class WebsocketRoutingFilter implements GlobalFilter, Ordered {
 	public WebsocketRoutingFilter(WebSocketClient webSocketClient,
 								  WebSocketService webSocketService,
 								  ObjectProvider<List<HttpHeadersFilter>> headersFilters) {
+		// 使用 ReactorNettyWebSocketClient  连接后端【被代理】的 WebSocket 服务。
 		this.webSocketClient = webSocketClient;
+		// 使用 HandshakeWebSocketService 实现类。通过该属性，处理客户端发起的连接请求( Handshake Request ) 。
 		this.webSocketService = webSocketService;
 		this.headersFilters = headersFilters;
 	}
@@ -66,6 +78,7 @@ public class WebsocketRoutingFilter implements GlobalFilter, Ordered {
 
 		List<String> protocols = headers.get(SEC_WEBSOCKET_PROTOCOL);
 		if (protocols != null) {
+			// 对header 中 Sec-WebSocket-Protocol 所有协议列表， 其中可能存在 ，分隔字符串
 			protocols = headers.get(SEC_WEBSOCKET_PROTOCOL).stream()
 					.flatMap(header -> Arrays.stream(commaDelimitedListToStringArray(header)))
 					.map(String::trim)
@@ -94,6 +107,9 @@ public class WebsocketRoutingFilter implements GlobalFilter, Ordered {
 		return filters;
 	}
 
+	/**
+	 * 代理后端 WebSocket 服务处理器。
+	 */
 	private static class ProxyWebSocketHandler implements WebSocketHandler {
 
 		private final WebSocketClient client;

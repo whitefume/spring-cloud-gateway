@@ -17,8 +17,6 @@
 
 package org.springframework.cloud.gateway.filter;
 
-import java.net.URI;
-
 import org.springframework.core.Ordered;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -29,22 +27,25 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClient.RequestBodySpec;
 import org.springframework.web.reactive.function.client.WebClient.RequestHeadersSpec;
 import org.springframework.web.server.ServerWebExchange;
-
-import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.CLIENT_RESPONSE_ATTR;
-import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.GATEWAY_REQUEST_URL_ATTR;
-import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.isAlreadyRouted;
-import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.setAlreadyRouted;
-
 import reactor.core.publisher.Mono;
 
+import java.net.URI;
+
+import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.*;
+
 /**
+ * Http 路由网关过滤器。其根据 http:// 或 https:// 前缀( Scheme )过滤处理，使用基WebClient 实现的 HttpClient 请求后端 Http 服务。
+ * WebClientWriteResponseFilter ，与 WebClientHttpRoutingFilter 成对使用的网关过滤器。
+ * 其将 WebClientWriteResponseFilter 请求后端 Http 服务的响应写回客户端。
  * @author Spencer Gibb
+ * 目前 WebClientHttpRoutingFilter / WebClientWriteResponseFilter 处于实验阶段，建议等正式发布在使用。
  */
 public class WebClientHttpRoutingFilter implements GlobalFilter, Ordered {
 
 	private final WebClient webClient;
 
 	public WebClientHttpRoutingFilter(WebClient webClient) {
+		//DefaultWebClient 实现类。通过该属性，请求后端的 Http 服务。
 		this.webClient = webClient;
 	}
 
@@ -90,6 +91,7 @@ public class WebClientHttpRoutingFilter implements GlobalFilter, Ordered {
 					response.setStatusCode(res.statusCode());
 					// Defer committing the response until all route filters have run
 					// Put client response as ServerWebExchange attribute and write response later NettyWriteResponseFilter
+					// 设置 res 到 CLIENT_RESPONSE_ATTR 。后续 WebClientWriteResponseFilter 将响应写回给客户端。
 					exchange.getAttributes().put(CLIENT_RESPONSE_ATTR, res);
 					return chain.filter(exchange);
 				});

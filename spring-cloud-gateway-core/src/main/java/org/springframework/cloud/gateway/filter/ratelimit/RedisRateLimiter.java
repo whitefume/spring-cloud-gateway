@@ -24,7 +24,7 @@ import reactor.core.publisher.Mono;
 /**
  * See https://stripe.com/blog/rate-limiters and
  * https://gist.github.com/ptarjan/e38f45f2dfe601419ca3af937fff574d#file-1-check_request_rate_limiter-rb-L11-L34
- *
+ * 使用redis lur 脚本实现限流功能
  * @author Spencer Gibb
  */
 public class RedisRateLimiter extends AbstractRateLimiter<RedisRateLimiter.Config> implements ApplicationContextAware {
@@ -78,6 +78,7 @@ public class RedisRateLimiter extends AbstractRateLimiter<RedisRateLimiter.Confi
 	 * This uses a basic token bucket algorithm and relies on the fact that Redis scripts
 	 * execute atomically. No other operations can run between fetching the count and
 	 * writing the new count.
+	 * 方法参数 id，令牌桶编号。一个令牌桶编号对应令牌桶。在本文场景中为请求限流键。
 	 */
 	@Override
 	@SuppressWarnings("unchecked")
@@ -106,14 +107,25 @@ public class RedisRateLimiter extends AbstractRateLimiter<RedisRateLimiter.Confi
 			String prefix = "request_rate_limiter." + id;
 
 			// You need two Redis keys for Token Bucket.
+			// prefix + ".tokens" 令牌桶剩余令牌数。
+			// prefix + ".timestamp" 令牌桶最后填充令牌时间，单位：秒
 			List<String> keys = Arrays.asList(prefix + ".tokens", prefix + ".timestamp");
 
 			// The arguments to the LUA script. time() returns unixtime in seconds.
+			// 获得 Lua 脚本参数
+			// 因为 Redis 的限制（ Lua中有写操作不能使用带随机性质的读操作，如TIME ）
+			// 不能在 Redis Lua中 使用 TIME 获取时间戳，因此只好从应用获取然后传入，
+			// 在某些极端情况下（机器时钟不准的情况下），限流会存在一些小问题。
+			// 第四个参数 ：消耗令牌数量，默认 1 。
 			List<String> scriptArgs = Arrays.asList(replenishRate + "", burstCapacity + "",
 					Instant.now().getEpochSecond() + "", "1");
 			// allowed, tokens_left = redis.eval(SCRIPT, keys, args)
 			Flux<List<Long>> flux = this.redisTemplate.execute(this.script, keys, scriptArgs);
 					// .log("redisratelimiter", Level.FINER);
+			// 返回结果为 [是否获取令牌成功, 剩余令牌数] ，其中，1 代表获取令牌成功，0 代表令牌获取失败。
+			// 第 25 行 ：当 Redis Lua 脚本过程中发生异常，忽略异常，返回 Flux.just(Arrays.asList(1L, -1L)) ，
+			// 即认为获取令牌成功。为什么？在 Redis 发生故障时，我们不希望限流器对 Reids 是强依赖，
+			// 并且 Redis 发生故障的概率本身就很低。
 			return flux.onErrorResume(throwable -> Flux.just(Arrays.asList(1L, -1L)))
 					.reduce(new ArrayList<Long>(), (longs, l) -> {
 						longs.addAll(l);

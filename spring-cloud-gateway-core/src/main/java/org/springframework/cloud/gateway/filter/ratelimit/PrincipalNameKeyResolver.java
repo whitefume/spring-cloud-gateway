@@ -5,6 +5,9 @@ import reactor.core.publisher.Mono;
 
 import java.security.Principal;
 
+/**
+ * 使用请求认证的 java.security.Principal 作为限流键
+ */
 public class PrincipalNameKeyResolver implements KeyResolver {
 
 	public static final String BEAN_NAME = "principalNameKeyResolver";
